@@ -70,6 +70,13 @@ def get_info(userid):
         return jsonify({"error": "no info found"}), 404
     return jsonify(info)
 
+@app.route('/clear_active', methods=['POST'])
+def clear_active():
+    with lock:
+        active_users.clear()
+        user_infos.clear()
+    return jsonify({"status": "cleared db lol"})
+
 def cleanup_inactive_users():
     while True:
         time.sleep(5)
