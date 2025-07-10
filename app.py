@@ -9,7 +9,6 @@ def send(userid):
     data = request.get_json()
     if not data or "command" not in data:
         return jsonify({"error": "Invalid data"}), 400
-
     command_queue[userid].append(data)
     return jsonify({"status": "queued"}), 200
 
@@ -19,12 +18,9 @@ def poll(userid):
     command_queue[userid] = []
     return jsonify(cmds)
 
-@app.route('/disconnect', methods=['POST'])
-def disconnect():
-    data = request.get_json()
-    if data and "userid" in data:
-        command_queue.pop(data["userid"], None)
-    return jsonify({"status": "disconnected"}), 200
+@app.route('/')
+def home():
+    return "Hello from Flask!"
 
-if __name__ == '__main__':
-    app.run()
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
