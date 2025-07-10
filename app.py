@@ -5,7 +5,7 @@ import time
 app = Flask(__name__)
 commands = {}
 active_users = {}
-user_info = {}
+user_infos = {}
 lock = Lock()
 
 USER_TIMEOUT = 10
@@ -48,7 +48,7 @@ def disconnect():
     userid = data.get('userid')
     with lock:
         active_users.pop(userid, None)
-        user_info.pop(userid, None)
+        user_infos.pop(userid, None)
     return jsonify({"status": "disconnected", "userid": userid})
 
 @app.route('/info_report', methods=['POST'])
@@ -56,10 +56,19 @@ def info_report():
     data = request.get_json()
     userid = data.get('userid')
     if not userid:
-        return jsonify({"error": "userid missing"}), 400
+        return jsonify({"error": "missing userid"}), 400
+
     with lock:
-        user_info[userid] = data
-    return jsonify({"status": "info stored", "userid": userid})
+        user_infos[userid] = data
+    return jsonify({"status": "info saved", "userid": userid})
+
+@app.route('/info_report/<userid>', methods=['GET'])
+def get_info(userid):
+    with lock:
+        info = user_infos.get(userid)
+    if not info:
+        return jsonify({"error": "no info found"}), 404
+    return jsonify(info)
 
 def cleanup_inactive_users():
     while True:
@@ -68,8 +77,8 @@ def cleanup_inactive_users():
         with lock:
             inactive = [uid for uid, last_seen in active_users.items() if now - last_seen > USER_TIMEOUT]
             for uid in inactive:
-                del active_users[uid]
-                user_info.pop(uid, None)
+                active_users.pop(uid, None)
+                user_infos.pop(uid, None)
 
 Thread(target=cleanup_inactive_users, daemon=True).start()
 
