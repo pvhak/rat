@@ -31,9 +31,9 @@ def send_command():
 @app.route('/poll/<userid>')
 def poll(userid):
     with lock:
-        active_users[userid] = time.time()
-        cmds = commands.get(userid, [])
-        commands[userid] = []
+        active_users[str(userid)] = time.time()
+        cmds = commands.get(str(userid), [])
+        commands[str(userid)] = []
     return jsonify(cmds)
 
 @app.route('/active')
@@ -44,7 +44,7 @@ def get_active_users():
 @app.route('/disconnect', methods=['POST'])
 def disconnect():
     data = request.get_json()
-    userid = data.get('userid')
+    userid = str(data.get('userid'))
     with lock:
         active_users.pop(userid, None)
     return jsonify({"status": "disconnected", "userid": userid})
@@ -54,9 +54,13 @@ def cleanup_inactive_users():
         time.sleep(5)
         now = time.time()
         with lock:
+            print(f"[Cleanup] Active users before cleanup: {list(active_users.keys())}")
             inactive = [uid for uid, last_seen in active_users.items() if now - last_seen > USER_TIMEOUT]
+            if inactive:
+                print(f"[Cleanup] Removing inactive users: {inactive}")
             for uid in inactive:
                 del active_users[uid]
+            print(f"[Cleanup] Active users after cleanup: {list(active_users.keys())}")
 
 Thread(target=cleanup_inactive_users, daemon=True).start()
 
