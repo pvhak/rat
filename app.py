@@ -71,13 +71,18 @@ def get_info(userid):
         return jsonify({"error": "no info found"}), 404
     return jsonify(info)
 
-@app.route("/clear_active", methods=["POST"])
+@app.route('/clear_active', methods=['POST'])
 def clear_active():
+    data = request.get_json()
+    
     received_key = data.get("key") if data else None
     expected_key = os.getenv("delkey")
 
     print(f"Received key: {received_key}")
     print(f"Expected key: {expected_key}")
+
+    if not received_key:
+        return jsonify({"error": "missing key"}), 403
 
     if received_key != expected_key:
         return jsonify({"error": "unauthorized"}), 403
@@ -85,8 +90,9 @@ def clear_active():
     with lock:
         active_users.clear()
         user_infos.clear()
+    print("Clear operation authorized, proceeding.")
+    return jsonify({"status": "cleared"}), 200
 
-    return jsonify({"message": "cleared"}), 200
 
 def cleanup_inactive_users():
     while True:
