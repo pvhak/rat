@@ -73,8 +73,11 @@ def get_info(userid):
 
 @app.route("/clear_active", methods=["POST"])
 def clear_active():
-    received_key = request.json.get("key")
+    received_key = data.get("key") if data else None
     expected_key = os.getenv("delkey")
+
+    print(f"Received key: {received_key}")
+    print(f"Expected key: {expected_key}")
 
     if received_key != expected_key:
         return jsonify({"error": "unauthorized"}), 403
