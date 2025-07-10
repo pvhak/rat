@@ -72,10 +72,16 @@ def get_info(userid):
 
 @app.route('/clear_active', methods=['POST'])
 def clear_active():
+    data = request.get_json()
+    key = data.get('key')
+
+    if key != os.getenv("delkey"):
+        return jsonify({"error": "unauthorized"}), 403
+
     with lock:
         active_users.clear()
         user_infos.clear()
-    return jsonify({"status": "cleared db lol"})
+    return jsonify({"status": "cleared"}), 200
 
 def cleanup_inactive_users():
     while True:
