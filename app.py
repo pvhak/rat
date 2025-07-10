@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
+from threading import Lock
 import time
 
+lock = Lock()
 app = Flask(__name__)
 commands = {}
 active_users = {}
