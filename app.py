@@ -32,9 +32,11 @@ def poll(userid):
 
 @app.route('/ping/<userid>', methods=['POST'])
 def ping(userid):
+    print(f"Received ping from user: {userid}")
     with lock:
         active_users[userid] = time.time()
     return jsonify({"status": "pong"})
+
 
 
 @app.route('/active')
