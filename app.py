@@ -1,30 +1,27 @@
 from flask import Flask, request, jsonify
-from collections import defaultdict
 
 app = Flask(__name__)
-command_queue = defaultdict(list)
-@app.route('/send/<userid>', methods=['POST', 'GET'])
-def send(userid):
-    if request.method == 'POST':
-        data = request.get_json()
-    else:
-        data = {
-            'command': request.args.get('command'),
-            'args': request.args.get('args')
-        }
-    print(f"Received from {userid}: {data}")
-    return jsonify({"status": "ok"})
 
+commands = {
+    "8662592387": [
+        {"command": "print", "args": "hi"},
+    ]
+}
 
-@app.route('/poll/<userid>', methods=['GET'])
+@app.route('/poll/<userid>')
 def poll(userid):
-    cmds = command_queue.get(userid, [])
-    command_queue[userid] = []
+    username = request.args.get('username')
+    gameid = request.args.get('gameid')
+    jobid = request.args.get('jobid')
+    cmds = commands.get(userid, [])
+    commands[userid] = []
     return jsonify(cmds)
 
-@app.route('/')
-def home():
-    return "Hello from Flask!"
+@app.route('/disconnect', methods=['POST'])
+def disconnect():
+    data = request.get_json()
+    userid = data.get('userid')
+    return jsonify({"status": "disconnected", "userid": userid})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
