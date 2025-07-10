@@ -1,18 +1,25 @@
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
+commands = {}
 
-commands = {
-    "8662592387": [
-        {"command": "print", "args": "hi"},
-    ]
-}
+@app.route('/send', methods=['POST'])
+def send_command():
+    data = request.get_json()
+    target = data.get('to')
+    command = {
+        "command": data.get('command'),
+        "args": data.get('args')
+    }
+    if not target or not command["command"]:
+        return jsonify({"error": "Invalid command data"}), 400
+    if target not in commands:
+        commands[target] = []
+    commands[target].append(command)
+    return jsonify({"status": "queued", "to": target})
 
 @app.route('/poll/<userid>')
 def poll(userid):
-    username = request.args.get('username')
-    gameid = request.args.get('gameid')
-    jobid = request.args.get('jobid')
     cmds = commands.get(userid, [])
     commands[userid] = []
     return jsonify(cmds)
