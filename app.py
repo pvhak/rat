@@ -78,9 +78,6 @@ def clear_active():
     received_key = data.get("key") if data else None
     expected_key = os.getenv("delkey")
 
-    print(f"Received key: {received_key}")
-    print(f"Expected key: {expected_key}")
-
     if not received_key:
         return jsonify({"error": "missing key"}), 403
 
@@ -90,7 +87,7 @@ def clear_active():
     with lock:
         active_users.clear()
         user_infos.clear()
-    print("Clear operation authorized, proceeding.")
+    print("db clear operation authorized!")
     return jsonify({"status": "cleared"}), 200
 
 
