@@ -3,14 +3,18 @@ from collections import defaultdict
 
 app = Flask(__name__)
 command_queue = defaultdict(list)
-
-@app.route('/send/<userid>', methods=['POST'])
+@app.route('/send/<userid>', methods=['POST', 'GET'])
 def send(userid):
-    data = request.get_json()
-    if not data or "command" not in data:
-        return jsonify({"error": "Invalid data"}), 400
-    command_queue[userid].append(data)
-    return jsonify({"status": "queued"}), 200
+    if request.method == 'POST':
+        data = request.get_json()
+    else:
+        data = {
+            'command': request.args.get('command'),
+            'args': request.args.get('args')
+        }
+    print(f"Received from {userid}: {data}")
+    return jsonify({"status": "ok"})
+
 
 @app.route('/poll/<userid>', methods=['GET'])
 def poll(userid):
