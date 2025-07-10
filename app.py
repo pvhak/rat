@@ -4,25 +4,27 @@ from collections import defaultdict
 app = Flask(__name__)
 command_queue = defaultdict(list)
 
-@app.route('/poll/<userid>', methods=['GET'])
-def poll(userid):
-    commands = command_queue[userid]
-    command_queue[userid] = []
-    return jsonify(commands)
-
 @app.route('/send/<userid>', methods=['POST'])
 def send(userid):
     data = request.get_json()
+    if not data or "command" not in data:
+        return jsonify({"error": "Invalid data"}), 400
+
     command_queue[userid].append(data)
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "queued"}), 200
+
+@app.route('/poll/<userid>', methods=['GET'])
+def poll(userid):
+    cmds = command_queue.get(userid, [])
+    command_queue[userid] = []
+    return jsonify(cmds)
 
 @app.route('/disconnect', methods=['POST'])
 def disconnect():
     data = request.get_json()
-    userid = data.get('userid')
-    if userid in command_queue:
-        del command_queue[userid]
-    return jsonify({"status": "disconnected"})
+    if data and "userid" in data:
+        command_queue.pop(data["userid"], None)
+    return jsonify({"status": "disconnected"}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run()
