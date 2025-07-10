@@ -6,7 +6,7 @@ app = Flask(__name__)
 commands = {}
 active_users = {}
 lock = Lock()
-
+info_data = {} 
 USER_TIMEOUT = 10
 
 @app.route('/send', methods=['POST'])
@@ -48,6 +48,24 @@ def disconnect():
     with lock:
         active_users.pop(userid, None)
     return jsonify({"status": "disconnected", "userid": userid})
+
+@app.route('/info_report', methods=['POST'])
+def info_report():
+    data = request.get_json()
+    userid = data.get('userid')
+    if not userid:
+        return jsonify({"error": "userid missing"}), 400
+    with lock:
+        info_data[userid] = data
+    return jsonify({"status": "info received"})
+
+@app.route('/get_info/<userid>')
+def get_info(userid):
+    with lock:
+        info = info_data.get(userid)
+    if info:
+        return jsonify(info)
+    return jsonify({"error": "no info"}), 404
 
 def cleanup_inactive_users():
     while True:
