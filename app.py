@@ -27,10 +27,13 @@ def poll(userid):
     commands[userid] = []
     return jsonify(cmds)
 
+
 @app.route('/ping/<userid>', methods=['POST'])
 def ping(userid):
-    active_users[userid] = time.time()
+    with lock:
+        active_users[userid] = time.time()
     return jsonify({"status": "pong"})
+
 
 @app.route('/active')
 def get_active_users():
