@@ -3,6 +3,7 @@ from threading import Lock, Thread
 import time
 import os
 
+app = Flask(__name__)
 commands = {}
 active_users = {}
 user_infos = {}
