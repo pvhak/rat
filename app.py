@@ -37,10 +37,13 @@ def poll(userid):
     now = time.time()
     with lock:
         last_poll = last_poll_times.get(userid, 0)
+        # Throttle too-frequent polling
         if now - last_poll < MIN_POLL_INTERVAL:
             return jsonify([])
+        # Update user's last active time
         active_users[userid] = now
         last_poll_times[userid] = now
+        # Get and clear commands for user
         cmds = commands.get(userid, [])
         commands[userid] = []
     print(f"[POLL] {userid} polled at {now}, returning {len(cmds)} commands")
@@ -48,10 +51,17 @@ def poll(userid):
 
 @app.route('/active')
 def get_active_users():
+    now = time.time()
     with lock:
-        users = list(active_users.keys())
-    print(f"[ACTIVE] {users}")
-    return jsonify(users)
+        # Remove timed-out users before returning active list
+        expired = [uid for uid, ts in active_users.items() if now - ts > USER_TIMEOUT]
+        for uid in expired:
+            print(f"[TIMEOUT] {uid} removed after {now - active_users[uid]:.2f}s inactivity")
+            active_users.pop(uid, None)
+            user_infos.pop(uid, None)
+        active_list = list(active_users.keys())
+    print(f"[ACTIVE] {active_list}")
+    return jsonify(active_list)
 
 @app.route('/disconnect', methods=['POST'])
 def disconnect():
@@ -106,11 +116,11 @@ def cleanup_inactive_users():
         time.sleep(1)
         now = time.time()
         with lock:
-            for uid, last_seen in list(active_users.items()):
-                if now - last_seen > USER_TIMEOUT:
-                    print(f"[TIMEOUT] {uid} removed after {now - last_seen:.2f}s of inactivity")
-                    active_users.pop(uid, None)
-                    user_infos.pop(uid, None)
+            expired = [uid for uid, last_seen in active_users.items() if now - last_seen > USER_TIMEOUT]
+            for uid in expired:
+                print(f"[TIMEOUT THREAD] {uid} removed after {now - active_users[uid]:.2f}s inactivity")
+                active_users.pop(uid, None)
+                user_infos.pop(uid, None)
 
 print("[INIT] Starting cleanup thread")
 Thread(target=cleanup_inactive_users, daemon=True).start()
