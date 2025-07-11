@@ -32,10 +32,12 @@ def send_command():
 
 @app.route('/poll/<userid>')
 def poll(userid):
+    now = time.time()
     with lock:
-        active_users[userid] = time.time()
+        active_users[userid] = now
         cmds = commands.get(userid, [])
         commands[userid] = []
+    print(f"[POLL] {userid} polled at {now}, returning {len(cmds)} commands")
     return jsonify(cmds)
 
 @app.route('/active')
@@ -98,7 +100,7 @@ def cleanup_inactive_users():
         with lock:
             inactive = [uid for uid, last_seen in list(active_users.items()) if now - last_seen > USER_TIMEOUT]
             for uid in inactive:
-                print(f"[TIMEOUT] {uid} is now offline!!")
+                print(f"[TIMEOUT] {uid} timed out at {now} (last seen at {active_users[uid]})")
                 active_users.pop(uid, None)
                 user_infos.pop(uid, None)
 
