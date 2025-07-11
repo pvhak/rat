@@ -3,12 +3,14 @@ from threading import Lock, Thread
 import time
 import os
 
-app = Flask(__name__)
 commands = {}
 active_users = {}
 user_infos = {}
+last_poll_times = {}
 lock = Lock()
-USER_TIMEOUT = 5
+
+USER_TIMEOUT = 10
+MIN_POLL_INTERVAL = 2.5
 
 @app.route('/send', methods=['POST'])
 def send_command():
