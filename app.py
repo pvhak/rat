@@ -96,8 +96,9 @@ def cleanup_inactive_users():
         time.sleep(5)
         now = time.time()
         with lock:
-            inactive = [uid for uid, last_seen in active_users.items() if now - last_seen > USER_TIMEOUT]
+            inactive = [uid for uid, last_seen in list(active_users.items()) if now - last_seen > USER_TIMEOUT]
             for uid in inactive:
+                print(f"[TIMEOUT] {uid} is now offline!!")
                 active_users.pop(uid, None)
                 user_infos.pop(uid, None)
 
