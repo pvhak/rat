@@ -8,7 +8,7 @@ commands = {}
 active_users = {}
 user_infos = {}
 lock = Lock()
-USER_TIMEOUT = 10
+USER_TIMEOUT = 5
 
 @app.route('/send', methods=['POST'])
 def send_command():
@@ -33,7 +33,11 @@ def send_command():
 def poll(userid):
     now = time.time()
     with lock:
+        last_poll = last_poll_times.get(userid, 0)
+        if now - last_poll < MIN_POLL_INTERVAL:
+            return jsonify([])
         active_users[userid] = now
+        last_poll_times[userid] = now
         cmds = commands.get(userid, [])
         commands[userid] = []
     print(f"[POLL] {userid} polled at {now}, returning {len(cmds)} commands")
