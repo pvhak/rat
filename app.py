@@ -8,7 +8,6 @@ commands = {}
 active_users = {}
 user_infos = {}
 lock = Lock()
-
 USER_TIMEOUT = 10
 
 @app.route('/send', methods=['POST'])
@@ -54,6 +53,7 @@ def disconnect():
     with lock:
         active_users.pop(userid, None)
         user_infos.pop(userid, None)
+    print(f"[DISCONNECT] {userid} manually disconnected")
     return jsonify({"status": "disconnected", "userid": userid})
 
 @app.route('/info_report', methods=['POST'])
@@ -94,20 +94,17 @@ def clear_active():
     print("db clear operation authorized!")
     return jsonify({"status": "cleared"}), 200
 
-
 def cleanup_inactive_users():
     while True:
         time.sleep(1)
         now = time.time()
         with lock:
-            print(f"[CLEANUP] Running at {now}, checking users...")
             for uid, last_seen in list(active_users.items()):
-                age = now - last_seen
-                print(f"[CHECK] {uid} last seen {age:.2f} seconds ago")
-                if age > USER_TIMEOUT:
-                    print(f"[TIMEOUT] {uid} removed after {age:.2f}s of inactivity")
+                if now - last_seen > USER_TIMEOUT:
+                    print(f"[TIMEOUT] {uid} removed after {now - last_seen:.2f}s of inactivity")
                     active_users.pop(uid, None)
                     user_infos.pop(uid, None)
+
 print("[INIT] Starting cleanup thread")
 Thread(target=cleanup_inactive_users, daemon=True).start()
 
