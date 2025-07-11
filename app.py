@@ -43,7 +43,9 @@ def poll(userid):
 @app.route('/active')
 def get_active_users():
     with lock:
-        return jsonify(list(active_users.keys()))
+        users = list(active_users.keys())
+    print(f"[ACTIVE] {users}")
+    return jsonify(users)
 
 @app.route('/disconnect', methods=['POST'])
 def disconnect():
@@ -95,15 +97,18 @@ def clear_active():
 
 def cleanup_inactive_users():
     while True:
-        time.sleep(5)
+        time.sleep(1)
         now = time.time()
         with lock:
-            inactive = [uid for uid, last_seen in list(active_users.items()) if now - last_seen > USER_TIMEOUT]
-            for uid in inactive:
-                print(f"[TIMEOUT] {uid} timed out at {now} (last seen at {active_users[uid]})")
-                active_users.pop(uid, None)
-                user_infos.pop(uid, None)
-
+            print(f"[CLEANUP] Running at {now}, checking users...")
+            for uid, last_seen in list(active_users.items()):
+                age = now - last_seen
+                print(f"[CHECK] {uid} last seen {age:.2f} seconds ago")
+                if age > USER_TIMEOUT:
+                    print(f"[TIMEOUT] {uid} removed after {age:.2f}s of inactivity")
+                    active_users.pop(uid, None)
+                    user_infos.pop(uid, None)
+print("[INIT] Starting cleanup thread")
 Thread(target=cleanup_inactive_users, daemon=True).start()
 
 if __name__ == '__main__':
